@@ -8,7 +8,7 @@
 NoiseModelling
 ======
 
-NoiseModelling is a library capable of producing noise maps. 
+NoiseModelling is a library capable of producing noise tuto.
 It can be freely used either for research and education, as well as by experts in a professional use.
 
 A general overview of the model (v3.4.5 - September 2020) can be found in [this video](https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s).
