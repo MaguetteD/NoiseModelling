@@ -89,6 +89,8 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
  */
 static def getAllConfig(Connection connection,double[] vals,int[] temps) {
     Sql sql = new Sql(connection)
+
+    sql.execute("DROP TABLE ALL_CONFIGURATIONS IF EXISTS")
     sql.execute("CREATE TABLE ALL_CONFIGURATIONS(IT INTEGER PRIMARY KEY AUTO_INCREMENT,PRIMARY_VAL FLOAT,SECONDARY_VAL FLOAT,TERTIARY_VAL FLOAT,OTHERS_VAL FLOAT,TEMP_VAL INTEGER)")
 
     int totalCombinations = vals.length * vals.length * vals.length * vals.length * temps.length

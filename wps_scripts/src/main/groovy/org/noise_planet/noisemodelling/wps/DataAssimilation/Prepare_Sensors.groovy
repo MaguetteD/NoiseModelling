@@ -84,33 +84,37 @@ static def exec(Connection connection,input) {
     csvToSql(connection,sensorCsv)
     measurement(connection,dayStart,dayEnd,deviceFolder)
 
-    sql.execute("ALTER TABLE SENSORS ALTER COLUMN The_GEOM " +
+    sql.execute("ALTER TABLE SENSORS_LOCATION ALTER COLUMN The_GEOM " +
             "TYPE geometry(PointZ, "+targetSRID+") " +
             "USING ST_SetSRID(ST_Force3D(THE_GEOM), "+targetSRID+")")
 
+    // Create the RECEIVERS table with unique sensor data from measurement (SENSORS_MEASUREMENTS_TRAINING: training data) table.
+    sql.execute("ALTER TABLE SENSORS_LOCATION ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+
 
     sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN THE_GEOM GEOMETRY(PointZ,"+targetSRID+")")
+    sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN IDRECEIVER INTEGER")
 
     sql.execute("UPDATE SENSORS_MEASUREMENTS sm " +
-            "SET THE_GEOM = (select ST_Transform(s.The_GEOM, "+targetSRID+" ) "+
-            " FROM SENSORS s " +
-            " WHERE sm.deveui = s.deveui )")
+            "SET THE_GEOM = (select ST_Transform(s.The_GEOM, "+targetSRID+" )"+
+            " FROM SENSORS_LOCATION s " +
+            " WHERE sm.deveui = s.deveui );")
+
+    sql.execute("UPDATE SENSORS_MEASUREMENTS sm " +
+            "SET IDRECEIVER = (select PK"+
+            " FROM SENSORS_LOCATION s " +
+            " WHERE sm.deveui = s.deveui);")
 
     extractObservationData(connection,trainingRatio)
 
-    sql.execute("ALTER TABLE OBSERVATION ALTER COLUMN THE_GEOM TYPE geometry(PointZ, "+targetSRID+") " +
+    sql.execute("ALTER TABLE SENSORS_MEASUREMENTS_TRAINING ALTER COLUMN THE_GEOM TYPE geometry(PointZ, "+targetSRID+") " +
             "USING ST_SetSRID(ST_Force3D(THE_GEOM), "+targetSRID+")")
 
-    String inputTable = "OBSERVATION"
+    String inputTable = "SENSORS_MEASUREMENTS_TRAINING"
     sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN T SET DATA TYPE INTEGER")
     sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN IDRECEIVER SET DATA TYPE INTEGER")
     sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN TEMP SET DATA TYPE FLOAT")
     sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN LEQA SET DATA TYPE FLOAT")
-
-    // Create the RECEIVERS table with unique sensor data from measurement (OBSERVATION: training data) table.
-    sql.execute("DROP TABLE IF EXISTS RECEIVERS")
-    sql.execute("CREATE TABLE RECEIVERS(IDRECEIVER INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)")
-    sql.execute("INSERT INTO RECEIVERS SELECT DISTINCT IDRECEIVER, THE_GEOM FROM "+inputTable)
 
     logger.info('End Preparation of Sensor dataset ')
 
@@ -150,8 +154,8 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 
 static def csvToSql(Connection connection, String filepath){
     Sql sql= new Sql(connection)
-
-    String tableName = "SENSORS"
+    sql.execute("""DROP TABLE IF EXISTS SENSORS_LOCATION""")
+    String tableName = "SENSORS_LOCATION"
     sql.execute("CREATE TABLE "+tableName+" (" +
             "    deveui VARCHAR(255)," +
             "    The_GEOM VARCHAR(255)" +
@@ -214,6 +218,7 @@ static def measurement(Connection connection,LocalDateTime dayStart, LocalDateTi
         !ts.isBefore(dayStart) && !ts.isAfter(dayEnd)
     }
 
+    sql.execute("""DROP TABLE IF EXISTS SENSORS_MEASUREMENTS;""")
     sql.execute("CREATE TABLE SENSORS_MEASUREMENTS (" +
             "    deveui VARCHAR(255)," +
             "    epoch VARCHAR(255)," +
@@ -288,10 +293,10 @@ static def readCsv(Path path) {
 
 
 /**
- * Extracts training observation sensor data from an input CSV one hour file  and writes filtered training dataset to an output CSV file.
+ * Extracts training observation sensor data from an input CSV one hour file and writes filtered training dataset to an output CSV file.
  *
  * @param connection  : The database connection used for executing queries.
- * @param ration : the percentage of the training data
+ * @param ratio : the percentage of the training data
  */
 static def extractObservationData(Connection connection,Float ratio) {
     Sql sql = new Sql(connection)
@@ -312,9 +317,9 @@ static def extractObservationData(Connection connection,Float ratio) {
     Map<String, Integer> resultMap = idReceiverMap.entrySet().toList().subList(0, keepSize).collectEntries {
         [(it.key): it.value]
     }
-
+    sql.execute("""DROP TABLE IF EXISTS SENSORS_MEASUREMENTS_TRAINING;""")
     sql.execute("""
-        CREATE TABLE IF NOT EXISTS OBSERVATION (
+        CREATE TABLE IF NOT EXISTS SENSORS_MEASUREMENTS_TRAINING (
             SENSORS VARCHAR(255),
             THE_GEOM VARCHAR(255),
             IDRECEIVER INTEGER,
@@ -328,8 +333,8 @@ static def extractObservationData(Connection connection,Float ratio) {
     measureRows.each { row ->
         String sensor = row.deveui
         if (resultMap.containsKey(sensor)) {
-            sql.execute("INSERT INTO OBSERVATION (SENSORS, THE_GEOM, IDRECEIVER, T, LEQA, TEMP) " +
-                    " VALUES ('${sensor}', '${row.The_GEOM}', ${idReceiverMap[sensor]}, '${row.epoch}', ${row.Leq}, ${row.Temp})")
+            sql.execute("INSERT INTO SENSORS_MEASUREMENTS_TRAINING (SENSORS, THE_GEOM, IDRECEIVER, T, LEQA, TEMP) " +
+                    " VALUES ('${sensor}', '${row.The_GEOM}', ${row.IDRECEIVER}, '${row.epoch}', ${row.Leq}, ${row.Temp})")
         }
     }
 

@@ -1,3 +1,15 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
 package org.noise_planet.noisemodelling.wps.DataAssimilation
 
 import geoserver.GeoServer
@@ -41,72 +53,39 @@ static def exec(Connection connection, input){
 
     String observationTable = input['observationTable']
     String noiseMapTable = input['noiseMapTable']
+
     Sql sql = new Sql(connection)
 
-    sql.execute("CREATE TABLE file1_cleaned AS " +
-            "SELECT " +
-            "    IDRECEIVER AS ID_sensor, " +
-            "    T, " +
-            "    LEQA " +
-            "FROM "+observationTable+"; \n" )
-    sql.execute("CREATE TABLE file2_cleaned AS \n" +
-            "SELECT \n" +
-            "    IDRECEIVER AS ID_sensor, \n" +
-            "    IT, \n" +
-            "    LEQA\n" +
-            "FROM "+noiseMapTable+"; \n" )
-    sql.execute("CREATE TABLE joined_data AS \n" +
-            "SELECT \n" +
-            "    f1.ID_sensor, \n" +
-            "    f1.T, \n" +
-            "    f2.IT, \n" +
-            "    f1.LEQA AS LEQA_file1, \n" +
-            "    f2.LEQA AS LEQA_file2\n" +
-            "FROM file1_cleaned f1\n" +
-            "INNER JOIN file2_cleaned f2 \n" +
-            "    ON f1.ID_sensor = f2.ID_sensor;\n")
+    sql.execute("DROP TABLE BEST_TEMP IF EXISTS")
+    sql.execute(
+            "CREATE TABLE BEST_TEMP AS " +
+                    "SELECT T, TEMP, diff_temp FROM ( " +
+                    "    SELECT f1.T, f2.TEMP, " +
+                    "           MEDIAN(ABS(f1.TEMP - f2.TEMP)) AS diff_temp, " +
+                    "           ROW_NUMBER() OVER (PARTITION BY f1.T ORDER BY MEDIAN(ABS(f1.TEMP - f2.TEMP))) AS rn " +
+                    "    FROM " + observationTable + " f1 " +
+                    "    CROSS JOIN " + noiseMapTable + " f2 " +
+                    "    GROUP BY f1.T, f2.TEMP " +
+                    ") sub WHERE rn = 1;"
+    )
 
-    sql.execute("CREATE TABLE agg_data AS \n" +
-            "SELECT \n" +
-            "    T, \n" +
-            "    IT, \n" +
-            "    MEDIAN(ABS(LEQA_file1 - LEQA_file2)) AS median_abs_diff, \n" +
-            "    MEDIAN(LEQA_file1) AS value_file1,\n" +
-            "    MEDIAN(LEQA_file2) AS value_file2,\n" +
-            "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_lower,\n" +
-            "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_upper,\n" +
-            "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_lower,\n" +
-            "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_upper\n" +
-            "FROM joined_data\n" +
-            "GROUP BY T, IT;\n" )
+    sql.execute("DROP TABLE agg_data IF EXISTS")
+    sql.execute("CREATE TABLE agg_data AS SELECT " +
+            "f1.T, f2.PERIOD, ROUND(MEDIAN(ABS(f1.LEQA - f2.LEQA)), 4) AS median_abs_diff " +
+            "FROM "+observationTable+"  f1, "+noiseMapTable+" f2, best_temp bt " +
+            "WHERE f2.TEMP = bt.TEMP AND bt.T = f1.T " +
+            "GROUP BY f1.T, f2.PERIOD;")
 
-    sql.execute("CREATE TABLE best_IT AS \n" +
-            "SELECT \n" +
-            "    T,\n" +
-            "    IT,\n" +
-            "    median_abs_diff,\n" +
-            "    value_file1,\n" +
-            "    value_file2,\n" +
-            "    file1_lower,\n" +
-            "    file1_upper,\n" +
-            "    file2_lower,\n" +
-            "    file2_upper\n" +
-            "FROM agg_data\n" +
-            "WHERE (T, median_abs_diff) IN (\n" +
-            "    SELECT \n" +
-            "        T, \n" +
-            "        MIN(median_abs_diff)\n" +
-            "    FROM agg_data\n" +
-            "    GROUP BY T\n" +
-            ");")
-
-    sql.execute("CREATE TABLE BEST_CONFIGURATION AS SELECT DISTINCT T, IT,ROUND(median_abs_diff,2) AS LEQA_DIFF FROM BEST_IT;")
+    sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
+    sql.execute("CREATE TABLE BEST_CONFIGURATION AS  SELECT * FROM agg_data a  WHERE median_abs_diff = ( SELECT MIN(median_abs_diff)   FROM agg_data WHERE T = a.T  );")
 
     // Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
-    sql.execute("CREATE TABLE BEST_CONFIG AS " +
-            "SELECT DISTINCT b.T, b.IT, b.LEQA_DIFF, a.PRIMARY_VAL, a.SECONDARY_VAL, a.TERTIARY_VAL, a.OTHERS_VAL, a.TEMP_VAL " +
-            "FROM BEST_CONFIGURATION b " +
-            "JOIN ALL_CONFIGURATIONS a ON b.IT = a.IT")
+    sql.execute("DROP TABLE BEST_CONFIGURATION_full IF EXISTS")
+    sql.execute("CREATE TABLE BEST_CONFIGURATION_full AS SELECT b.*, a.* FROM BEST_CONFIGURATION b, ALL_CONFIGURATIONS a WHERE b.PERIOD = a.IT")
+
+    sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
+    sql.execute("DROP TABLE agg_data IF EXISTS")
+    sql.execute("DROP TABLE BEST_TEMP IF EXISTS")
 
     logger.info('End Extract best configuration')
 }

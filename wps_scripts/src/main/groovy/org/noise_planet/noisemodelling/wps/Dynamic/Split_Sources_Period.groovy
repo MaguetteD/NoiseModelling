@@ -118,6 +118,9 @@ def exec(Connection connection, Map input) {
 
     String sourcePeriodFieldName = TableLocation.capsIdentifier(input["sourcePeriodFieldName"] as String, dbType)
 
+    sql.execute("DROP TABLE IF EXISTS SOURCES_GEOM")
+    sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
+
     String sourceGeomTableName = "SOURCES_GEOM"
     if(input.containsKey("sourceGeomTableName")) {
         sourceGeomTableName = input["sourceGeomTableName"] as String
@@ -138,6 +141,7 @@ def exec(Connection connection, Map input) {
     columnNames.remove(sourceIndexFieldName)
     def additionalColumns = String.join(", ", columnNames)
     // Groovy Dollar slashy string that contain the queries
+
 
     def query = $/
         CREATE TABLE $sourceGeomTableName(IDSOURCE INT PRIMARY KEY, THE_GEOM GEOMETRY)

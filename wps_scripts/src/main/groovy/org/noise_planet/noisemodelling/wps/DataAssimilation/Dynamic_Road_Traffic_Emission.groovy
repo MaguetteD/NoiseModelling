@@ -1,6 +1,22 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
 package org.noise_planet.noisemodelling.wps.DataAssimilation
 
 import groovy.sql.Sql
+import org.h2gis.utilities.SpatialResultSet
+import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
+import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -23,24 +39,9 @@ static def exec(Connection connection){
     logger.info('Start Traffic calibration')
 
     Sql sql = new Sql(connection)
-    sql.execute("ALTER TABLE RECEIVERS DROP COLUMN ID_ROW, ID_COL")
-    sql.execute("INSERT INTO RECEIVERS (THE_GEOM) SELECT s.The_GEOM FROM SENSORS s WHERE s.DEVEUI in (select m.DEVEUI FROM SENSORS_MEASUREMENTS m) ")
 
+    sql.execute("DROP TABLE DYNAMIC_ROADS IF EXISTS")
     // Create the DYNAMIC_ROADS table and populate it with dynamic road data by varying the traffic with the best configuration.
-    createDynamicRoadsTable(sql)
-
-    logger.info('End Traffic calibration')
-}
-
-
-/**
- * Creates the DYNAMIC_ROADS table and populates it with computed values.
- * Uses road and best configurations data to generate dynamic traffic values.
- *
- * @param sql Sql instance used to execute table creation and data insertion.
- */
-static def createDynamicRoadsTable(Sql sql) {
-
     sql.execute("CREATE TABLE DYNAMIC_ROADS (" +
             "PK serial PRIMARY KEY," +
             "TIME integer," +
@@ -81,6 +82,49 @@ static def createDynamicRoadsTable(Sql sql) {
             "END AS HGV_D, " +
             "r.HGV_E, r.HGV_N, r.LV_SPD_D, r.LV_SPD_E, r.LV_SPD_N, r.HGV_SPD_D, r.HGV_SPD_E, r.HGV_SPD_N, r.PVMT, c.TEMP_VAL " +
             "FROM ROADS r " +
-            "CROSS JOIN BEST_CONFIG c")
+            "CROSS JOIN BEST_CONFIGURATION_FULL c")
+
+    sql.execute("drop table if exists LW_ROADS;")
+    sql.execute("create table LW_ROADS (LINK_ID integer, PERIOD INTEGER, the_geom Geometry, " +
+            "HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision);")
+
+    def qry = 'INSERT INTO LW_ROADS(LINK_ID,PERIOD, the_geom, ' +
+            'HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000) ' +
+            'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
+
+    int k = 0
+    def st = connection.prepareStatement("SELECT * FROM DYNAMIC_ROADS" )
+    int coefficientVersion = 2
+    sql.withBatch( 100, qry) { ps ->
+
+        SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+
+        Map<String, Integer> sourceFieldsCache = new HashMap<>()
+
+        while (rs.next()) {
+            k++
+            //logger.info(rs)
+            Geometry geo = rs.getGeometry()
+
+            // Compute emission sound level for each road segment
+
+            double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
+            def lday = AcousticIndicatorsFunctions.wToDb(results[0])
+            // fill the LW_ROADS table
+            ps.addBatch(rs.getInt("LINK_ID") as Integer,rs.getInt("TIME") as Integer,  geo as Geometry,
+                    lday[0] as Double, lday[1] as Double, lday[2] as Double,
+                    lday[3] as Double, lday[4] as Double, lday[5] as Double,
+                    lday[6] as Double, lday[7] as Double)
+        }
+    }
+
+    // Add Z dimension to the road segments
+    sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
+
+
+    logger.info('End Traffic calibration')
 }
+
+
+
 
