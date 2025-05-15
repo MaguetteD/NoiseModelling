@@ -199,6 +199,7 @@ Create the map result. The output table is called here ``ASSIMILATED_MAPS`` and 
     ])
 
 This table <b>ASSIMILATED_MAPS</b> can be exported as a shape file and imported into qgis to analyze results.
+
 .. code-block:: groovy
     new Export_Table().exec(connection,
                     ["exportPath": workingFolder+"results/ASSIMILATED_MAPS.shp",
