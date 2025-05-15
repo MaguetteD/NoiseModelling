@@ -24,8 +24,7 @@ Contact:
 
 TAGUSARI, Junta. `Small-scale noise mapping for arbitrary regions using open source noise prediction module. <https://www.ingentaconnect.com/content/ince/incecp/2024/00000270/00000009/art00070>`_ In : INTER-NOISE and NOISE-CON Congress and Conference Proceedings. Institute of Noise Control Engineering, 2024. p. 2621-2627.
 
-Contact: 
-         - j.tagusari@eng.hokudai.ac.jp
+Contact: j.tagusari@eng.hokudai.ac.jp
 
 LEGRIFFON, Ingrid et RUAUD, Elise. `Drone fleet noise impact calculation-a methodology <https://www.ingentaconnect.com/contentone/ince/incecp/2024/00000270/00000010/art00074>`_. In : INTER-NOISE and NOISE-CON Congress and Conference Proceedings. Institute of Noise Control Engineering, 2024. p. 1675-1680.
 
@@ -154,7 +153,8 @@ Contact:
 
 NOURMOHAMMADI Z., LILASATHAPORNKIT T., ASHFAQ M., et al., `Mapping Urban Environmental Performance with Emerging Data Sources: A Case of Urban Greenery and Traffic Noise in Sydney, Australia <https://www.mdpi.com/2071-1050/13/2/605>`_, Sustainability, 2021, vol. 13, n° 2, p. 605
 
-Contact: - z.nourmohammadi@unsw.edu.au
+Contact: 
+         - z.nourmohammadi@unsw.edu.au
          - t.lilasathapornkit@unsw.edu.au
          - muhammad.ashfaq0209@gmail.com
 
@@ -208,29 +208,38 @@ Contact:
 
 WANG Z., NOVACK T., YAN Y., ZIPF A., `Quiet Route Planning for Pedestrians in Traffic Noise Polluted Environments <https://ieeexplore.ieee.org/document/9139350/>`_, IEEE Transactions on Intelligent Transportation Systems, 2020.
 
-Contact: - zhiyong.wang@scut.edu.cn
+Contact: 
+         - zhiyong.wang@scut.edu.cn
          - Tessio.Novack@warwick.ac.uk
          - yanyingwei@u.nus.edu
          - zipf@uni-heidelberg.de
 
-AUMOND P., FORTIN N., CAN A., `Overview of the NoiseModelling open-source software version 3 and its applications <https://www.ingentaconnect.com/contentone/ince/incecp/2020/00000261/00000004/art00003>`_, INTER-NOISE and NOISE-CON Congress and Conference Proceedings, 2020, vol. 261, n°4, p. 2005-2011
-Contact: - pierre.aumond@univ-eiffel.fr
+AUMOND P., FORTIN N., CAN A., `Overview of the NoiseModelling open-source software version 3 and its applications <https://www.ingentaconnect.com/contentone/ince/incecp/2020/00000261/00000004/art00003>`_, INTER-NOISE and NOISE-CON Congress and Conference Proceedings, 2020, vol. 261, n°4, p. 2005-2011.
+
+Contact: 
+         - pierre.aumond@univ-eiffel.fr
          - nicolas.fortin@univ-eiffel.fr
          - arnaud.can@univ-eiffel.fr
 
 BOCHER, Erwan, GUILLAUME, Gwenaël, PICAUT, Judicaël, et al. `Noisemodelling: An open source GIS based tool to produce environmental noise maps <https://www.mdpi.com/2220-9964/8/3/130>`_. Isprs international journal of geo-information, 2019, vol. 8, no 3, p. 130.
-Contact: - erwan.bocher@univ-ubs.fr
+
+Contact: 
+         - erwan.bocher@univ-ubs.fr
          - gwenael.guillaume@univ-eiffel.fr
          - judicael.picaut@univ-eiffel.fr
 
-CAN A., AUMOND P., BECARIE, C., LECLERCQ, L., `Dynamic approach for the study of the spatial impact of road traffic noise at peak hours <https://pub.dega-akustik.de/ICA2019/data/articles/000646.pdf>`_, Proceedings of the 23rd International Congress on Acoustics, Aachen, Allemagne, 09-13 September, 2019
-Contact: - arnaud.can@univ-eiffel.fr
+CAN A., AUMOND P., BECARIE, C., LECLERCQ, L., `Dynamic approach for the study of the spatial impact of road traffic noise at peak hours <https://pub.dega-akustik.de/ICA2019/data/articles/000646.pdf>`_, Proceedings of the 23rd International Congress on Acoustics, Aachen, Allemagne, 09-13 September, 2019.
+
+Contact: 
+         - arnaud.can@univ-eiffel.fr
          - pierre.aumond@univ-eiffel.fr
          - cecile.becarie@univ-eiffel.fr
          - ludovic.leclercq@univ-eiffel.fr
 
 QUINTERO G., AUMOND P., CAN A., BALASTEGUI A., ROMEU J., `Statistical requirements for noise mapping based on mobile measurements using bikes <https://www.sciencedirect.com/science/article/abs/pii/S0003682X19302087>`_, Applied Acoustics, 156, 271-278, 2019
-Contact: - guillermo.quintero@upc.edu
+
+Contact: 
+         - guillermo.quintero@upc.edu
          - andreu.balastegui@upc.edu
 
 .. figure:: images/examples/Exposure.PNG
@@ -242,18 +251,24 @@ Contact: - guillermo.quintero@upc.edu
   https://www.youtube.com/watch?v=jl8tASDr-uQ&t=133s
 
 ALIONTE C-G., COMEAGA D-C., `Noise assessment of the small-scale wind farm <https://doi.org/10.1051/e3sconf/201911202011>`_, In : E3S Web of Conferences. EDP Sciences, 2019
-Contact: - cristian.alionte@upb.ro
+
+Contact: 
+         - cristian.alionte@upb.ro
          - daniel.comeaga@upb.ro
 
 AUMOND P., CAN A., MALLET V., GAUVREAU B., GUILLAUME G., `Global sensitivity analysis for urban noise modelling <https://pub.dega-akustik.de/ICA2019/data/articles/000637.pdf>`_, Proceedings of the 23rd International Congress on Acoustics, Aachen, Allemagne, 09-13 September, 2019
-Contact: - pierre.aumond@univ-eiffel.fr
+
+Contact: 
+         - pierre.aumond@univ-eiffel.fr
          - vivien.mallet@inria.fr
          - arnaud.can@univ-eiffel.fr
          - benoit.gauvreau@univ-eiffel.fr
          - gwenael.guillaume@univ-eiffel.fr
 
 ROHRLICH F. , VERRON C. (Noise Makers), *Captation et Simulation d’Ambiances Urbaines Spatialisées*, 2018-2019
-Contact: - charles.verron@noisemakers.fr
+
+Contact: 
+         - charles.verron@noisemakers.fr
          - felix.rohrlich@ircam.fr
 
 .. figure:: images/examples/Rohrlich.PNG
@@ -261,17 +276,23 @@ Contact: - charles.verron@noisemakers.fr
     :width: 75%
 
 CAN A., AUMOND P., BECARIE C., LECLERCQ L., `Approche dynamique pour l’étude de l’emprise spatiale du bruit de trafic routier aux heures de pointe <https://hal.archives-ouvertes.fr/hal-02482315>`_, Recherche en Transport Sécurité, 2018
-Contact: - arnaud.can@univ-eiffel.fr
+
+Contact: 
+         - arnaud.can@univ-eiffel.fr
          - pierre.aumond@univ-eiffel.fr
          - cecile.becarie@univ-eiffel.fr
          - ludovic.leclercq@univ-eiffel.fr
 
 AUMOND P., CAN A., `Probabilistic modeling framework to predict traffic sound distribution <https://www.euronoise2018.eu/docs/papers/86_Euronoise2018.pdf>`_, Proceedings of Euronoise, Hersonissos, Crete, 27-31 May 2018
-Contact: - arnaud.can@univ-eiffel.fr
+
+Contact: 
+         - arnaud.can@univ-eiffel.fr
          - pierre.aumond@univ-eiffel.fr
 
 AUMOND P., JACQUESSON L., CAN A., `Probabilistic modeling framework for multisource sound mapping <https://www.sciencedirect.com/science/article/pii/S0003682X17311283>`_, Applied Acoustics, 139, 34-43, 2018
-Contact: - arnaud.can@univ-eiffel.fr
+
+Contact: 
+         - arnaud.can@univ-eiffel.fr
          - ludovic.jacquesson@univ-eiffel.fr
          - pierre.aumond@univ-eiffel.fr
 
