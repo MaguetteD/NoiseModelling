@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -44,13 +45,40 @@ public class AttenuationVisitor implements CutPlaneVisitor {
         final SceneWithAttenuation scene = multiThreadParent.scene;
         // Source surface reflectivity
         double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-
-
-        CnossosPath cnossosPathH = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, gs, false);
-
+        
         CnossosPath cnossosPathF = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.profileBuilder.exactFrequencyArray, gs, PathFinder.isFavorable());
+        CnossosPath cnossosPathH = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.profileBuilder.exactFrequencyArray, gs, PathFinder.isFavorable());
+
+        if(cnossosPathF != null) {
+            cnossosPathF.setFavorable(PathFinder.isFavorable());
+            if(pathParameters.size() >= 2){
+                cnossosPathF.double_aBoundary = pathParameters.get(0).double_aBoundary; // double_aBoundary is calculated once for the direct path and will be the same for all paths.
+            }
+            addPropagationPath(cnossosPathF);
+        }
+
+        if(cnossosPathH != null) {
+            cnossosPathH.setFavorable(PathFinder.isFavorable());
+            if(pathParameters.size() >= 2){
+                cnossosPathH.double_aBoundary = pathParameters.get(1).double_aBoundary;
+            }
+            addPropagationPath(cnossosPathH);
+        }
+
+        return PathSearchStrategy.CONTINUE;
+    }
+
+    public PathSearchStrategy onNewCutPlaneTC28(CutProfile cutProfileH,CutProfile cutProfileF) {
+        final SceneWithAttenuation scene = multiThreadParent.scene;
+        // Source surface reflectivity
+        double gs = scene.sourceGs.getOrDefault(cutProfileH.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
+
+        CnossosPath cnossosPathF = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfileF, scene.isBodyBarrier(),
                 scene.profileBuilder.exactFrequencyArray, gs, true);
+        CnossosPath cnossosPathH = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfileH, scene.isBodyBarrier(),
+                scene.profileBuilder.exactFrequencyArray, gs, false);
 
         if(cnossosPathF != null) {
             cnossosPathF.setFavorable(true);
@@ -76,6 +104,27 @@ public class AttenuationVisitor implements CutPlaneVisitor {
 
     }
 
+    /**
+     * Compares two coordinates with a specified decimal precision
+     * @param c1 First coordinate
+     * @param c2 Second coordinate
+     * @param precision Number of decimal places to consider
+     * @return true if coordinates are equal within the specified precision
+     */
+    private boolean isCoordinatesEqualWithPrecision(Coordinate c1, Coordinate c2,
+                                                    int precision) {
+        if (c1 == c2) return true;
+        if (c1 == null || c2 == null) return false;
+
+        double factor = Math.pow(10, precision);
+
+        return Math.round(c1.x * factor) / factor == Math.round(c2.x * factor) / factor &&
+                Math.round(c1.y * factor) / factor == Math.round(c2.y * factor) / factor &&
+                (Double.isNaN(c1.z) && Double.isNaN(c2.z) ||
+                        Math.round(c1.z * factor) / factor == Math.round(c2.z * factor) / factor);
+    }
+
+
     private void processPath(String period, AttenuationParameters AttenuationParameters, CnossosPath path) {
         double[] aglobalSR = null;
         Vector3D fieldVectorPropagation = Orientation.rotate(path.getSourceOrientation(),
@@ -86,7 +135,11 @@ public class AttenuationVisitor implements CutPlaneVisitor {
                 multiThreadParent.scene, multiThreadParent.exportAttenuationMatrix);
 
         if(!pathParameters.isEmpty()) {
-            if (pathParameters.get(pathParameters.size() - 1).getSRSegment().s.equals(path.getSRSegment().s) && pathParameters.get(pathParameters.size() - 1).getSRSegment().r.equals(path.getSRSegment().r)) {
+            if (isCoordinatesEqualWithPrecision(pathParameters.get(pathParameters.size() - 1).getSRSegment().s,
+                    path.getSRSegment().s, 2) &&
+                    isCoordinatesEqualWithPrecision(pathParameters.get(pathParameters.size() - 1).getSRSegment().r,
+                            path.getSRSegment().r, 2)
+            ) {
                 aglobalSR = sumArrayWithPonderation(pathParameters.get(pathParameters.size() - 1).aGlobal, path.aGlobal, AttenuationParameters.getWindRose()[roseIndex]);
                 int sourceId = path.getCutProfile().getSource().id;
                 double sourceLi = path.getCutProfile().getSource().li;

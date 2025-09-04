@@ -23,29 +23,19 @@ public class CnossosPath extends Path {
     public  double[] aDiv = new double[0];
     public  double[] aRef = new double[0];
     public  double[] double_aBoundary = new double[0];
-    //public  double[] double_aBoundaryF = new double[0];
-    public  double[] aRetroDiff = new double[0]; // Alpha Retro Diffraction homogenous
-    //public  double[] aRetroDiffF = new double[0]; // Alpha Retro Diffraction favorable
+    public  double[] aRetroDiff = new double[0];
     public  double[] aGlobal = new double[0];
-    //public double[] aGlobalF = new double[0];
     public double[] aDif = new double[0];
-    //public double[] aDifF = new double[0];
     public double[] aGlobalL = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation
     public double delta = Double.MAX_VALUE;
-    //public double deltaF= Double.MAX_VALUE;
     public double deltaPrime = Double.MAX_VALUE;
-    //public double deltaPrimeF= Double.MAX_VALUE;
     public double deltaSPrimeR = Double.MAX_VALUE;
     public double deltaSRPrime = Double.MAX_VALUE;
     public ABoundary aBoundary = new ABoundary();
-    //public ABoundary aBoundaryF = new ABoundary();
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
-    //public double deltaSPrimeRF= Double.MAX_VALUE;
-    //public double deltaSRPrimeF= Double.MAX_VALUE;
     public double e =0;
-    //public double deltaRetroH= Double.MAX_VALUE;
-    //public double deltaRetroF= Double.MAX_VALUE;
+    public double deltaRetroF= Double.MAX_VALUE;
 
     public void init(int size) {
         this.aAtm = new double[size];

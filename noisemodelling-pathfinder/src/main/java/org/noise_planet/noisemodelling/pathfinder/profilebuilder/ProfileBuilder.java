@@ -52,6 +52,15 @@ public class ProfileBuilder {
     private static final GeometryFactory FACTORY = new GeometryFactory();
     private static final double DELTA = 1e-3;
 
+    public static void setFavorable(boolean favorable) {
+        ProfileBuilder.favorable = favorable;
+    }
+
+    public static boolean isFavorable() {
+        return favorable;
+    }
+
+    public static boolean favorable = false;
     /** If true, no more data can be add. */
     private boolean isFeedingFinished = false;
     /** Wide angle points of a building polygon */
@@ -64,7 +73,6 @@ public class ProfileBuilder {
     private int groundNodeCapacity = TREE_NODE_CAPACITY;
     /**
      * Max length of line part used for profile retrieving.
-     * @see ProfileBuilder#getProfile(Coordinate, Coordinate)
      */
     private double maxLineLength = 60;
     /** List of buildings. */
@@ -742,6 +750,7 @@ public class ProfileBuilder {
             //Feed the RTree
             topoTree = new STRtree(topoNodeCapacity);
             try {
+
                 vertices = layerDelaunay.getVertices();
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while getting vertices", e);
@@ -764,14 +773,14 @@ public class ProfileBuilder {
             topoTree.build();
         }
         //Update building z
-        if(topoTree != null) {
+        if(topoTree != null){
             for (Building b : buildings) {
                 if(isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
                     b.poly2D_3D();
                     b.poly.apply(new ElevationFilter.UpdateZ(b.height + b.updateZTopo(this)));
                 }
             }
-            for (Wall w : walls) {
+            for(Wall w : walls){
                 if(isNaN(w.p0.z) || w.p0.z == 0.0) {
                     w.p0.z = w.height + getZGround(w.p0);
                 }
@@ -857,6 +866,8 @@ public class ProfileBuilder {
                 }
             }
         }
+
+
         rtree.build();
         groundEffectsRtree.build();
         // initialize with default frequencies
@@ -954,6 +965,97 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double defaultGroundAttenuation, boolean stopAtObstacleOverSourceReceiver) {
+        CutPointSource sourcePoint  = new CutPointSource(sourceCoordinate);
+        CutPointReceiver receiverPoint = new CutPointReceiver(receiverCoordinate);
+
+        CutProfile profile = new CutProfile(sourcePoint, receiverPoint);
+
+        // Add sourceCoordinate
+        int groundAbsorptionIndex = getIntersectingGroundAbsorption(FACTORY.createPoint(sourceCoordinate));
+        if(groundAbsorptionIndex >= 0) {
+            sourcePoint.setGroundCoefficient(groundAbsorptions.get(groundAbsorptionIndex).getCoefficient());
+        } else {
+            sourcePoint.setGroundCoefficient(defaultGroundAttenuation);
+        }
+
+        //Fetch topography evolution between sourceCoordinate and receiverCoordinate
+        if(topoTree != null) {
+            addTopoCutPts(sourceCoordinate, receiverCoordinate, profile, stopAtObstacleOverSourceReceiver);
+            if(stopAtObstacleOverSourceReceiver && profile.hasTopographyIntersection) {
+                return profile;
+            }
+        } else {
+            profile.getSource().zGround = 0.0;
+            profile.getReceiver().zGround = 0.0;
+        }
+
+        //Add Buildings/Walls and Ground effect transition points
+        if(rtree != null) {
+            LineSegment fullLine = new LineSegment(sourceCoordinate, receiverCoordinate);
+            addGroundBuildingCutPts(fullLine, profile, stopAtObstacleOverSourceReceiver);
+            if(stopAtObstacleOverSourceReceiver && profile.hasBuildingIntersection) {
+                return profile;
+            }
+        }
+
+        // Propagate ground coefficient for unknown coefficients
+        double currentCoefficient = sourcePoint.groundCoefficient;
+        for (CutPoint cutPoint : profile.cutPoints) {
+            if(Double.isNaN(cutPoint.groundCoefficient)) {
+                cutPoint.setGroundCoefficient(currentCoefficient);
+            } else if (cutPoint instanceof CutPointGroundEffect) {
+                currentCoefficient = cutPoint.getGroundCoefficient();
+            }
+        }
+
+        // Compute the interpolation of Z ground for intermediate points
+        CutPoint previousZGround = sourcePoint;
+        int nextPointIndex = 0;
+        for (int pointIndex = 1; pointIndex < profile.cutPoints.size() - 1; pointIndex++) {
+            CutPoint cutPoint = profile.cutPoints.get(pointIndex);
+            if(Double.isNaN(cutPoint.zGround)) {
+                if(nextPointIndex <= pointIndex) {
+                    // look for next reference Z ground point
+                    for(int i = pointIndex + 1; i < profile.cutPoints.size(); i++){
+                        CutPoint nextPoint = profile.cutPoints.get(i);
+                        if (!Double.isNaN(nextPoint.zGround)){
+                            nextPointIndex = i;
+                            break;
+                        }
+                    }
+                }
+                CutPoint nextPoint = profile.cutPoints.get(nextPointIndex);
+                cutPoint.zGround = Vertex.interpolateZ(cutPoint.coordinate,
+                        new Coordinate(previousZGround.coordinate.x, previousZGround.coordinate.y,
+                                previousZGround.getzGround()),
+                        new Coordinate(nextPoint.coordinate.x, nextPoint.coordinate.y, nextPoint.getzGround()));
+                if(Double.isNaN(cutPoint.coordinate.z) || cutPoint instanceof CutPointGroundEffect) {
+                    // Bottom of walls are set to NaN z because it can be computed here at low cost
+                    // (without fetch dem r-tree)
+                    // ground effect change points is taking the Z of ground in coordinate too
+                    cutPoint.coordinate.setZ(cutPoint.zGround);
+                }
+            } else {
+                // we have an update on Z ground
+                previousZGround = cutPoint;
+            }
+        }
+       /*if(favorable){
+            profile.cutPoints = (ArrayList<CutPoint>) CurvedProfileGenerator.applyTransformation(profile.cutPoints);
+        }*/
+        return profile;
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given coordinates.
+     * @param sourceCoordinate Starting point.
+     * @param receiverCoordinate Ending point.
+     * @param defaultGroundAttenuation Default absorption ground effect value if no ground absorption value is found
+     * @param stopAtObstacleOverSourceReceiver If an obstacle is found higher than then segment sourceCoordinate
+     *                                        receiverCoordinate, stop computing and a CutProfile with intersection information
+     * @return Cutting profile.
+     */
+    public CutProfile getProfileF(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double defaultGroundAttenuation, boolean stopAtObstacleOverSourceReceiver) {
         CutPointSource sourcePoint  = new CutPointSource(sourceCoordinate);
         CutPointReceiver receiverPoint = new CutPointReceiver(receiverCoordinate);
 
@@ -1497,6 +1599,143 @@ public class ProfileBuilder {
     }
 
     /**
+     * Fetch all intersections with TIN - Favorable version.
+     * In this version, for each segment portion crossing a triangle, the highest terrain
+     * altitude is used (max Z) instead of the interpolated value at the intersection.
+     * @param outputPoints Output list of coordinates (X,Y,Z) forming the favorable topographic profile
+     * @param p1 first point
+     * @param p2 second point
+     * @param stopAtObstacleOverSourceReceiver Stop fetching intersections if an obstacle is detected
+     * @return True if the segment p1-p2 is not intersecting with terrain (free field)
+     */
+    public boolean fetchTopographicProfileFavorable(List<Coordinate> outputPoints, Coordinate p1, Coordinate p2, boolean stopAtObstacleOverSourceReceiver) {
+
+        if (topoTree == null) {
+            return true;
+        }
+
+        // get origin triangle id
+        int curTriP1 = getTriangleIdByCoordinate(p1);
+        LineSegment propaLine = new LineSegment(p1, p2);
+
+        if (curTriP1 == -1) {
+            // p1 outside bounds
+            Coordinate intersectionPt = new Coordinate();
+            AtomicInteger minDistanceTriangle = new AtomicInteger();
+            if (findClosestTriangleIntersection(propaLine, intersectionPt, minDistanceTriangle)) {
+                Coordinate[] triangleVertex = getTriangleVertices(minDistanceTriangle.get());
+                outputPoints.add(new Coordinate(
+                        p1.x, p1.y,
+                        Vertex.interpolateZ(p2, triangleVertex[0], triangleVertex[1], triangleVertex[2])
+                ));
+                curTriP1 = minDistanceTriangle.get();
+            } else {
+                // out of DEM propagation area
+                return true;
+            }
+        }
+
+        HashSet<Integer> navigationHistory = new HashSet<>();
+        int navigationTri = curTriP1;
+
+        // Add p1 coordinate (altitude max in starting triangle is just p1 itself)
+        Coordinate[] triangleVertex = getTriangleVertices(curTriP1);
+        outputPoints.add(new Coordinate(
+                p1.x, p1.y,
+                Vertex.interpolateZ(p1, triangleVertex[0], triangleVertex[1], triangleVertex[2])
+        ));
+
+        boolean freeField = true;
+
+        while (navigationTri != -1) {
+            navigationHistory.add(navigationTri);
+            Coordinate intersectionPt = new Coordinate();
+            int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
+
+            if (propaTri == -1) {
+                // Last triangle: add p2
+                triangleVertex = getTriangleVertices(navigationTri);
+                outputPoints.add(new Coordinate(
+                        p2.x, p2.y,
+                        Vertex.interpolateZ(p2, triangleVertex[0], triangleVertex[1], triangleVertex[2])
+                ));
+            } else {
+                if (!Double.isNaN(intersectionPt.z)) {
+                    // FAVORABLE: get the highest Z along this segment portion
+                    double maxZ = getMaxZAlongSegmentInTriangle(
+                            navigationTri,
+                            propaLine.p0,
+                            intersectionPt
+                    );
+
+                    // Add the peak point if it's above p0 Z
+                    if (maxZ > outputPoints.get(outputPoints.size() - 1).z) {
+                        // We need an approximate XY for the peak (optional: midpoint or real location of max)
+                        Coordinate midPt = midpoint(propaLine.p0, intersectionPt);
+                        outputPoints.add(new Coordinate(midPt.x, midPt.y, maxZ));
+                    }
+
+                    // Add the intersection point (with interpolated Z, but may be lower)
+                    outputPoints.add(intersectionPt);
+
+                    // Compare with line-of-sight Z at intersection
+                    Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
+                    double interpolatedZ = Vertex.interpolateZ(
+                            closestPointOnPropagationLine, propaLine.p0, propaLine.p1
+                    );
+
+                    if (interpolatedZ < maxZ) {
+                        freeField = false;
+                        if (stopAtObstacleOverSourceReceiver) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            propaLine.p0 = intersectionPt; // Update start point for next segment portion
+            navigationTri = propaTri;
+        }
+
+        return freeField;
+    }
+
+    /**
+     * Get the highest Z value along the segment portion inside a triangle.
+     * Here we just sample N points along the portion and interpolate Z from the triangle.
+     */
+    private double getMaxZAlongSegmentInTriangle(int triangleId, Coordinate start, Coordinate end) {
+        Coordinate[] triangleVertex = getTriangleVertices(triangleId);
+        final int samples = 10; // more samples = more precision
+        double maxZ = Double.NEGATIVE_INFINITY;
+
+        for (int i = 0; i <= samples; i++) {
+            double t = i / (double) samples;
+            double x = start.x + t * (end.x - start.x);
+            double y = start.y + t * (end.y - start.y);
+            double z = Vertex.interpolateZ(
+                    new Coordinate(x, y),
+                    triangleVertex[0],
+                    triangleVertex[1],
+                    triangleVertex[2]
+            );
+            if (z > maxZ) {
+                maxZ = z;
+            }
+        }
+        return maxZ;
+    }
+
+    /** Simple midpoint between two coordinates */
+    private Coordinate midpoint(Coordinate a, Coordinate b) {
+        return new Coordinate(
+                (a.x + b.x) / 2.0,
+                (a.y + b.y) / 2.0,
+                (a.z + b.z) / 2.0
+        );
+    }
+
+
+    /**
      * @param normal1 Normalized vector 1
      * @param normal2 Normalized vector 2
      * @return The angle between the two normals
@@ -1574,6 +1813,7 @@ public class ProfileBuilder {
             return 0.0;
         }
     }
+
 
     /**
      * Different type of intersection.

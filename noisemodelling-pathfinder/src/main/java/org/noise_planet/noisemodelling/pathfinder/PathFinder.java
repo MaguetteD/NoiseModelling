@@ -53,6 +53,16 @@ public class PathFinder {
     private static final double epsilon = 1e-7;
     private static final double MAX_RATIO_HULL_DIRECT_PATH = 4;
     public static final Logger LOGGER = LoggerFactory.getLogger(PathFinder.class);
+
+    public static boolean isFavorable() {
+        return favorable;
+    }
+
+    public void setFavorable(boolean favorable) {
+        this.favorable = favorable;
+    }
+
+    static boolean favorable = false;
     /** Progression information */
     public ProgressVisitor progressVisitor;
 
@@ -87,7 +97,6 @@ public class PathFinder {
         this.threadCount = Runtime.getRuntime().availableProcessors();
         this.progressVisitor = new EmptyProgressVisitor();
     }
-
     /**
      * Computation stacks and timing are collected by this class in order
      * to profile the execution of the simulation
@@ -300,7 +309,7 @@ public class PathFinder {
         if (propaDistance < data.maxSrcDist) {
             // Process direct : horizontal and vertical diff
             strategy = directPath(src, rcv, data.computeVerticalDiffraction,
-                    data.computeHorizontalDiffraction, dataOut);
+                    data.computeHorizontalDiffraction, dataOut,favorable);
             if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                     strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
@@ -323,11 +332,16 @@ public class PathFinder {
      */
     public CutPlaneVisitor.PathSearchStrategy directPath(SourcePointInfo src, ReceiverPointInfo rcv,
                                                          boolean verticalDiffraction, boolean horizontalDiffraction,
-                                                         CutPlaneVisitor dataOut) {
+                                                         CutPlaneVisitor dataOut,boolean favorable) {
 
         CutPlaneVisitor.PathSearchStrategy strategy = CutPlaneVisitor.PathSearchStrategy.CONTINUE;
 
         CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.defaultGroundAttenuation, !verticalDiffraction);
+        if(favorable){
+            cutProfile.cutPoints = (ArrayList<CutPoint>) CurvedProfileGenerator.applyTransformation(cutProfile.cutPoints);
+
+            //cutProfile.cutPoints = (ArrayList<CutPoint>) CurvedProfileGenerator.curveProfile(cutProfile.cutPoints,cutProfile.cutPoints.get(0).coordinate.distance(cutProfile.cutPoints.get(cutProfile.cutPoints.size()-1).getCoordinate()));
+        }
         if(cutProfile.getSource() != null) {
             cutProfile.getSource().id = src.getSourceIndex();
             cutProfile.getSource().li = src.li;
@@ -359,6 +373,9 @@ public class PathFinder {
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
             CutProfile cutProfileRight = computeVEdgeDiffraction(rcv, src, data, RIGHT);
             if (cutProfileRight != null) {
+                if(favorable){
+                    cutProfileRight.cutPoints = (ArrayList<CutPoint>) CurvedProfileGenerator.applyTransformation(cutProfileRight.cutPoints);
+                }
                 strategy = dataOut.onNewCutPlane(cutProfileRight);
                 if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                         strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
@@ -367,6 +384,9 @@ public class PathFinder {
             }
             CutProfile cutProfileLeft = computeVEdgeDiffraction(rcv, src, data, LEFT);
             if (cutProfileLeft != null) {
+                if(favorable){
+                    cutProfileLeft.cutPoints = (ArrayList<CutPoint>) CurvedProfileGenerator.applyTransformation(cutProfileLeft.cutPoints);
+                }
                 strategy = dataOut.onNewCutPlane(cutProfileLeft);
             }
         }
@@ -411,6 +431,7 @@ public class PathFinder {
                     cutPoints.add(profile.getReceiver());
                 }
             }
+
             CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
                     (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
             mainProfile.insertCutPoint(false,

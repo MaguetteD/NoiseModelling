@@ -39,6 +39,7 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
     Plane cutPlane;
     List<Coordinate> input;
     LineSegment intersectionLine = new LineSegment();
+    Set<Integer> containItem = new HashSet<>();
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
 
@@ -52,6 +53,14 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
         this.left = left;
         this.p1Top2 = new LineSegment(p1, p2);
         seg = new PreparedLineString(GEOMETRY_FACTORY.createLineString(new Coordinate[]{p1, p2}));
+        setCurvedScene();
+    }
+
+    public void setCurvedScene(){
+        if (profileBuilder.isFavorable()){
+            CurvedProfileGenerator.applyTransformationScene(profileBuilder,p1,p2);
+        }
+
     }
 
     /**
@@ -74,6 +83,14 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
         if(!itemProcessed.contains(id)) {
             itemProcessed.add(id);
             Wall processedWall = profileBuilder.getProcessedWalls().get(id);
+//            if (profileBuilder.isFavorable()){
+//                if (!containItem.contains(id)){
+//                    CurvedProfileGenerator.applyTransformationScene(profileBuilder.getProcessedWalls().get(id),p1,p2);
+//                    containItem.add(id);
+//                }
+//
+//                //List<Wall> walls = profileBuilder.getProcessedWalls();
+//            }
             if(processedWall.getLineSegment().distance(intersectionLine) < ProfileBuilder.epsilon) {
                 addItem(id);
             }

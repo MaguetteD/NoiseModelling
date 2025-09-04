@@ -240,6 +240,29 @@ public class ProfileBuilderTest {
     }
 
     @Test
+    public void TC28LateralRightTest() throws Exception {
+        ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
+
+        profileBuilder.addBuilding(READER.read("POLYGON((113 10, 113 11, 114 11, 114 10, 113 10))"), 3.67);
+        profileBuilder.addBuilding(READER.read("POLYGON((400 5, 400 6, 401 6, 401 5, 400 5))"), 2.81);
+        profileBuilder.addBuilding(READER.read("POLYGON((415 5, 415 6, 416 6, 416 5, 415 5))"), 2.76);
+
+
+        profileBuilder.finishFeeding();
+
+        CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 50, 3), new Coordinate(1000, 100, 1));
+
+        List<CutPoint> pts = profile.cutPoints;
+        /*assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
+        assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
+        assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(pts.size() - 1).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(pts.size() - 1).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(pts.size() - 1).getCoordinate().z, DELTA);*/
+
+    }
+
+    @Test
     public void testProfileTopographicGroundEffectWall() throws Exception {
 
         //Profile building

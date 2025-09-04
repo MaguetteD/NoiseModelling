@@ -1612,12 +1612,12 @@ public class PathFinderTest {
         DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
+        computeRays.setFavorable(true);
         computeRays.run(propDataOut);
 
         // Expected Values
 
         assertEquals(3, propDataOut.getCutProfiles().size());
-
         assertCutProfile("TC28_Direct", propDataOut.cutProfiles.poll());
         assertCutProfile("TC28_Right", propDataOut.cutProfiles.poll());
 

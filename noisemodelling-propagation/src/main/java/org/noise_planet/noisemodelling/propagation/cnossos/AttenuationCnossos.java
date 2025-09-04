@@ -661,7 +661,7 @@ public class AttenuationCnossos {
 
         if(type.equals(DIFV)) {
             if(proPathParameters.keepAbsorption) {
-                if(proPathParameters.isFavorable()) {
+                if(proPathParameters.favorable) {
                     proPathParameters.aBoundary.deltaDiffSR[i] = deltaDiffSR;
                 }
                 else {

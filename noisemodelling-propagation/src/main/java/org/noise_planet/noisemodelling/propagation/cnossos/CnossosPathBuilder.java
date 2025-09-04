@@ -6,6 +6,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
@@ -218,7 +219,11 @@ public class CnossosPathBuilder {
         List<PointPath> points = new ArrayList<>();
         List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
 
-        if (favorable) cutProfilePoints = CurvedProfileGenerator.applyTransformation(cutProfilePoints);
+        /*if (favorable){
+            cutProfilePoints = CurvedProfileGenerator.applyTransformation(cutProfilePoints);
+            cutProfilePoints = CurvedProfileGenerator.curveProfile(cutProfilePoints,cutProfile.cutPoints.get(0).getCoordinate().distance(cutProfile.cutPoints.get(cutProfile.cutPoints.size()-1).getCoordinate()));
+
+        }*/
         List<Coordinate> pts2D = cutProfile.computePts2D();
         if(pts2D.size() != cutProfilePoints.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
