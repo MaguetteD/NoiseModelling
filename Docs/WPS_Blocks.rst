@@ -12,7 +12,7 @@ The WPS standard defines how a client can request the execution of a process, an
 
 NoiseModelling and WPS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Since release v.3.0.0, NoiseModelling comes with various WPS scripts, encapsulated in so-called blocks. These blocks, written in `Groovy`_ language, are executed thanks to the `GeoServer`_ WPS engine.
+Since release v.3.0.0, NoiseModelling comes with various WPS scripts, encapsulated in so-called blocks. These blocks, written in `Groovy`_ language, are executed thanks to the `Javalin`_.
 
 Physically stored as ``.groovy`` files *(openable in any text editor)*, they are located in the ``NoiseModelling_5.0.2-SNAPSHOT/noisemodelling/scripts`` directory.
 
@@ -24,6 +24,7 @@ Physically stored as ``.groovy`` files *(openable in any text editor)*, they are
 
 
 .. _Groovy: https://groovy-lang.org/
+.. _Javalin : https://javalin.io/
 
 Create your own WPS block
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

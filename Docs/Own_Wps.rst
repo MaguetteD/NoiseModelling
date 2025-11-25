@@ -26,8 +26,8 @@ General Structure
 
 ::
 
-    import geoserver.GeoServer
-    import geoserver.catalog.Store
+    import io.javalin.Javalin;
+    import io.javalin.http.staticfiles.Location;
 
 2. WPS Script meta data
 -------------------------
@@ -51,31 +51,18 @@ General Structure
         ouputparameter: [name: '...', title: '...', type: String.class]
     ]
 
-4. Set connection method
+4. Set main method to execute
 -----------------------------------
 
 ::
 
-    def static Connection openPostgreSQLDataStoreConnection() {
-        Store store = new GeoServer().catalog.getStore("h2gisdb")
-        JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
-        return jdbcDataStore.getDataSource().getConnection()
-    }
+    def run(input,connection) {
 
-5. Set main method to execute 
------------------------------------
+        // Execute code here
+        // for example, run SQL command lines
+        Sql sql = new Sql(connection)
+        sql.execute("drop table if exists TABLETODROP")
 
-::
-
-    def run(input) {
-    
-        // Open connection and close it at the end
-        openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
-            // Execute code here
-            // for example, run SQL command lines
-            Sql sql = new Sql(connection)
-            sql.execute("drop table if exists TABLETODROP")    
-        }
         
         // print to Console windows
         return [result : 'Ok ! ']

@@ -5,7 +5,7 @@ Get Started
 
 #. Go to the official NoiseModelling repository: https://github.com/Universite-Gustave-Eiffel/NoiseModelling
 
-#. There are 4 main librairies: 
+#. There are 4 main libraries:
 
     * ``noisemodelling-emission`` : to determine the noise emission
     * ``noisemodelling-jdbc`` : to connect NoiseModelling to a database

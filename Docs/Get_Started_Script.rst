@@ -1,7 +1,7 @@
 Pilot NoiseModelling with scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this tutorial, we describe the different ways to pilot NoiseModelling thanks to scripts. To do so, we will use a dedicated packaging of NoiseModelling, called ``NoiseModelling_5.0.0_without_gui``, in which the GUI has been removed (no more Geoserver and :doc:`WPS_Builder`).
+In this tutorial, we describe the different ways to pilot NoiseModelling thanks to scripts. To do so, we will use a dedicated packaging of NoiseModelling, called ``NoiseModelling_5.x.x-SNAPSHOT``, in which the GUI has been removed (no more Web Server and :doc:`WPS_Builder`).
 
 #. Go to the NoiseModelling latest `release page`_
 #. Download and unzip the `NoiseModelling_5.0.2-SNAPSHOT`_ file

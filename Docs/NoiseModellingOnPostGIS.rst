@@ -4,7 +4,7 @@ Use NoiseModelling with a PostGIS database
 Introduction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NoiseModelling is distributed with `GeoServer`_. This application has been preconfigured to use `H2GIS`_ as the default database.
+NoiseModelling is distributed with a web server using`Javalin`_. This application has been preconfigured to use `H2GIS`_ as the default database.
 
 H2GIS does not need to be configured or installed on the system and is therefore perfectly suitable as a default database.
 
@@ -14,7 +14,7 @@ That is why NoiseModelling has been written with the idea of maintaining the H2G
 
 This tutorial will not cover the steps for installing and configuring a PostGIS database.
 
-.. _Geoserver: http://geoserver.org/
+.. _Javalin : https://javalin.io/
 .. _H2GIS : http://h2gis.org/
 .. _PostgreSQL: https://www.postgresql.org/
 .. _PostGIS: https://postgis.net/
