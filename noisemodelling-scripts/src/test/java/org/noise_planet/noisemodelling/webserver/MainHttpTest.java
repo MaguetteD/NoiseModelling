@@ -61,7 +61,8 @@ class MainHttpTest {
      */
     @BeforeAll
     public static void setUp() throws IOException {
-        app = Main.startServer(false);
+        MainServer mainServer = new MainServer();
+        app = mainServer.startServer(false);
     }
 
     /**

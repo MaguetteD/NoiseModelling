@@ -1,3 +1,3 @@
 cd /home/.../NoiseModelling_5.0.2-SNAPSHOT/
 
-./bin/Scripts -w ./ -s noisemodelling/scripts/Data_Assimilation/All_Possible_Configuration.groovy -trafficValues "0.01,1,2" -temperatureValues "10,15,20"
+./bin/NoiseModelling_Without_GUI -w ./ -s noisemodelling/scripts/Data_Assimilation/All_Possible_Configuration.groovy -trafficValues "0.01,1,2" -temperatureValues "10,15,20"

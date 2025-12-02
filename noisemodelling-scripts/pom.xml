@@ -288,12 +288,12 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>org.noise_planet.noisemodelling.webserver.Main</mainClass>
-                            <id>WebServer</id>
+                            <mainClass>org.noise_planet.noisemodelling.webserver.MainServer</mainClass>
+                            <id>NoiseModelling_With_GUI</id>
                         </program>
                         <program>
                             <mainClass>org.noise_planet.noisemodelling.scripts.Main</mainClass>
-                            <id>Scripts</id>
+                            <id>NoiseModelling_Without_GUI</id>
                         </program>
                     </programs>
                     <!-- This ensures all dependencies are included -->

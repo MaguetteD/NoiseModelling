@@ -20,16 +20,17 @@ The documentation below presents the architecture of NoiseModelling with its dif
 1. NoiseModelling libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NoiseModelling is made of 4 main `librairies`_: 
+NoiseModelling is made of 5 main `libraries`_:
 
 * ``noisemodelling-emission`` : to determine the noise emission
 * ``noisemodelling-pathfinder`` : to determine the noise path
 * ``noisemodelling-propagation`` : to calculate the noise propagation
 * ``noisemodelling-jdbc`` : to connect NoiseModelling to a database
+* ``noisemodelling-scripts`` : to execute NoiseModelling with or without a web server
 
 These libraries may be used independently of each other. Note that the ``noisemodelling-jdbc`` library *(JDBC = Java DataBase Connectivity)* is central since it allows the three others to communicate with each other as soon as the data are stored in a database *(which is the default situation)*.
 
-.. _librairies: https://github.com/Ifsttar/NoiseModelling
+.. _libraries: https://github.com/Ifsttar/NoiseModelling
 
 
 2. Database connection
@@ -37,7 +38,7 @@ These libraries may be used independently of each other. Note that the ``noisemo
 
 Thanks to the ``noisemodelling-jdbc`` library, NoiseModelling can access and communicate with databases. This system is quite adapted to store, manage and process (spatial) data. Here, the user has the choice between to database (free, open-source and powerful) couples:
 
-* `H2`_ / `H2GIS`_, which is configured and embeded by default. In this case, the user has nothing to do.
+* `H2`_ / `H2GIS`_, which is configured and embedded by default. In this case, the user has nothing to do.
 * `PostGreSQL`_ / `PostGIS`_. In this case, the user has to configure the connexion (read ":doc:`NoiseModellingOnPostGIS`" page for more information).
 
 In both cases, database can be local or remote.
