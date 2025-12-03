@@ -8,10 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.noise_planet.noisemodelling.scripts.Main;
 
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.Objects;
 import java.util.concurrent.Callable;
@@ -54,19 +52,17 @@ public class MainServer {
 
         OwsController owsController = new OwsController();
 
-        File htmlWpsBuilderPath;
-        try {
-            htmlWpsBuilderPath = new File(Objects.requireNonNull(Main.class.getResource("static/wpsbuilder"))
-                    .toURI());
-        } catch (URISyntaxException ex) {
-            throw new IOException(ex);
-        }
+        String root = System.getProperty("user.dir");
+        Path staticRoot = Paths.get(root).getParent().resolve("static");
+
         app = Javalin.create(config -> {
-            config.staticFiles.add(htmlWpsBuilderPath.getAbsolutePath(),
-                    Location.EXTERNAL);
+            config.staticFiles.add("org/noise_planet/noisemodelling/scripts/static/wpsbuilder", Location.CLASSPATH);
+            if (!scriptsDir.toString().contains("main/groovy")){
+                config.staticFiles.add(staticRoot.toString(), Location.EXTERNAL);
+            }
         }).start(8000);
 
-        int port = app.port();
+                int port = app.port();
         String url = "http://localhost:" + port + "/";
         LOGGER.info("Start NoiseModelling: " + url);
 
