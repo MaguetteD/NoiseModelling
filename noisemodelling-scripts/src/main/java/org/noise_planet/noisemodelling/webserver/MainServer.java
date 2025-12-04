@@ -8,11 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.noise_planet.noisemodelling.scripts.Main;
 
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.*;
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -30,9 +29,16 @@ public class MainServer {
      * @param args command-line arguments passed to the application. Not utilized currently.
      * @throws IOException if an I/O error occurs during server initialization.
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, SQLException {
         MainServer mainServer = new MainServer();
-        mainServer.startServer(true);
+        Path scriptsDir;
+        if (args.length != 0) {
+            scriptsDir = mainServer.findScriptsDirFromArgs(args);
+        }else{
+            scriptsDir = mainServer.finScriptsDir();
+        }
+        mainServer.startServer(true,scriptsDir);
+
     }
 
 
@@ -46,27 +52,24 @@ public class MainServer {
      * @return the initialized and started Javalin application instance.
      * @throws IOException if an I/O error occurs during server initialization or script directory resolution.
      */
-    public Javalin startServer(boolean openBrowser) throws IOException {
-        Path scriptsDir = finScriptsDir();
+    public Javalin startServer(boolean openBrowser,Path scriptsDir) throws IOException, SQLException {
 
         PropertyConfigurator.configure(
                 Objects.requireNonNull(Main.class.getResource("static/log4j.properties")));
 
-        OwsController owsController = new OwsController();
+        OwsController owsController = new OwsController(scriptsDir);
 
-        File htmlWpsBuilderPath;
-        try {
-            htmlWpsBuilderPath = new File(Objects.requireNonNull(Main.class.getResource("static/wpsbuilder"))
-                    .toURI());
-        } catch (URISyntaxException ex) {
-            throw new IOException(ex);
-        }
+        String root = System.getProperty("user.dir");
+        Path staticRoot = Paths.get(root).getParent().resolve("static");
+
         app = Javalin.create(config -> {
-            config.staticFiles.add(htmlWpsBuilderPath.getAbsolutePath(),
-                    Location.EXTERNAL);
+            config.staticFiles.add("org/noise_planet/noisemodelling/scripts/static/wpsbuilder", Location.CLASSPATH);
+            if (!scriptsDir.toString().contains("main/groovy")){
+                config.staticFiles.add(staticRoot.toString(), Location.EXTERNAL);
+            }
         }).start(8000);
 
-        int port = app.port();
+                int port = app.port();
         String url = "http://localhost:" + port + "/";
         LOGGER.info("Start NoiseModelling: " + url);
 
@@ -97,7 +100,7 @@ public class MainServer {
      *
      * @param url the URL to be opened in the default web browser. It must be a properly formatted URI.
      */
-    public void openBrowser(String url) {
+    public void openBrowser(String url){
         try {
             if (Desktop.isDesktopSupported()) {
                 Desktop.getDesktop().browse(new URI(url));
@@ -189,5 +192,19 @@ public class MainServer {
         } else {
             throw new RuntimeException("Scripts not found in expected locations: "+ scriptsDir);
         }
+    }
+
+    private Path findScriptsDirFromArgs(String[] args) {
+        for (String arg : args) {
+            if (arg.startsWith("-scripts=")) {
+                Path path = Paths.get(arg.substring("-scripts=".length())).toAbsolutePath();
+                if (Files.exists(path)) {
+                    return path;
+                }
+                throw new RuntimeException("Provided scripts directory does not exist: " + path);
+            }
+        }
+
+        throw new RuntimeException("Missing required argument: -scripts="+"path/to/scripts");
     }
 }

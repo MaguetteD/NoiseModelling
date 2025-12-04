@@ -28,8 +28,7 @@ public class WpsScriptWrapper {
      * This variable represents the base directory from which scripts are loaded,
      * grouped, and processed within the WpsScriptWrapper class.
      */
-    private Path scriptsRoot;
-    Path projectRoot = Paths.get(System.getProperty("user.dir"));
+    private final Path scriptsRoot;
 
     /**
      * Default constructor for the WpsScriptWrapper class.
@@ -40,20 +39,8 @@ public class WpsScriptWrapper {
      * directory of the application and is expected to exist at:
      * "noisemodelling-scripts/src/main/groovy/org/noise_planet/noisemodelling/scripts".
      */
-    public WpsScriptWrapper() {
-        if (!Files.exists(projectRoot.resolve("noisemodelling-scripts")) && projectRoot.getParent() != null) {
-            projectRoot = projectRoot.getParent();
-        }
-        Path devScripts = projectRoot.resolve(Paths.get("noisemodelling-scripts/src/main/groovy/org/noise_planet/noisemodelling/scripts")).normalize();
-
-        Path zipScripts = projectRoot.resolve("noisemodelling/scripts");
-        if (Files.exists(devScripts)) {
-            this.scriptsRoot = devScripts;
-        } else if (Files.exists(zipScripts)) {
-            this.scriptsRoot = zipScripts;
-        } else {
-            throw new RuntimeException("Scripts not found in expected locations");
-        }
+    public WpsScriptWrapper(Path scriptsRoot) {
+        this.scriptsRoot = scriptsRoot;
     }
 
 

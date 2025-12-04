@@ -81,16 +81,14 @@ public class DataBaseManager {
      * @return An active database connection wrapped in a {@link ConnectionWrapper} instance.
      * @throws SQLException If unable to establish a connection to the database.
      */
-     Connection openDatabaseConnection() throws SQLException {
+     public Connection openDatabaseConnection() throws SQLException {
         String dbDir = getDbDirectory();
         File dbDirFile = new File(dbDir);
         if (!dbDirFile.exists()) {
             dbDirFile.mkdirs();
         }
-        String databasePath = "jdbc:h2:" + dbDir + "/" + getCurrentDbName() + ";AUTO_SERVER=TRUE";
+        String databasePath = "jdbc:h2:" + dbDir + "/" + getCurrentDbName() + ";AUTO_SERVER=TRUE" + ";AUTO_RECONNECT=TRUE" + ";MV_STORE=TRUE" + ";LOCK_TIMEOUT=7200000";
         Driver.load();
-        Connection connection = DriverManager.getConnection(databasePath, "", "");
-        H2GISFunctions.load(connection);
-        return new ConnectionWrapper(connection);
+         return DriverManager.getConnection(databasePath, "", "");
     }
 }

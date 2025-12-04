@@ -4,6 +4,7 @@ import io.javalin.http.Context;
 import net.opengis.wps10.ExecuteType;
 import org.geotools.wps.WPSConfiguration;
 import org.geotools.xsd.Parser;
+import org.h2gis.functions.factory.H2GISFunctions;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.scripts.Main;
 
@@ -11,10 +12,14 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.h2.server.web.PageParser.escapeHtml;
 
 /**
  * The OwsController class handles requests for OGC Web Services (OWS), including
@@ -24,6 +29,16 @@ import java.util.Optional;
  */
 public class OwsController {
 
+    /**
+     * Represents the root directory where the Web Processing Service (WPS) scripts are stored.
+     * This path serves as the base location for loading, managing, and executing the scripts
+     * utilized by the OwsController for various WPS operations.
+     *
+     * The scripts within this directory are expected to adhere to a structured format, allowing
+     * for proper organization and processing. The directory serves as a critical configuration
+     * point for initializing and reloading scripts in the OwsController.
+     */
+    Path scriptsRoot;
     /**
      * Manages the database operations and configurations required for the web server.
      *
@@ -55,20 +70,28 @@ public class OwsController {
      * to execute processes defined in scripts. It is responsible for script execution and handling inputs
      * and outputs for WPS processes.
      */
-    WpsScriptWrapper wpsScriptWrapper = new WpsScriptWrapper();
+    WpsScriptWrapper wpsScriptWrapper;
 
 
     /**
-     * Constructs an instance of the OwsController class. This constructor initializes the
-     * WPS scripts by loading and grouping them using the WpsScriptWrapper utility. The scripts
-     * are classified based on their directory structure and wrapped into appropriate script
-     * wrappers for further processing.
+     * Constructs a new instance of the OwsController class, initializing the environment
+     * with the provided script directory and setting up the necessary components for
+     * handling Web Processing Service (WPS) operations. The constructor also establishes
+     * a database connection to load spatial functions required for operations.
      *
-     * @throws IOException if an error occurs while loading or processing the script files.
+     * @param scriptsDir the directory path containing the WPS scripts. This is used to load
+     *                   and organize scripts for processing various WPS requests.
+     * @throws IOException if an I/O error occurs while initializing or loading scripts.
+     * @throws SQLException if a database access error occurs while loading spatial functions.
      */
-    public OwsController() throws IOException {
+    public OwsController( Path scriptsDir) throws IOException, SQLException {
+        this.scriptsRoot = scriptsDir;
+        wpsScriptWrapper = new WpsScriptWrapper(scriptsRoot);
         Map<String, List<File>> groupedScripts = wpsScriptWrapper.loadScripts();
         wpsScripts = WpsScriptWrapper.buildScriptWrappers(groupedScripts);
+        try (Connection conn = dataBaseManager.openDatabaseConnection()) {
+            H2GISFunctions.load(conn);
+        }
     }
     /**
      * Reloads the WPS (Web Processing Service) scripts by reloading them from the file system
@@ -110,7 +133,6 @@ public class OwsController {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            ctx.status(500).result("Server Error: " + e.getMessage());
         }
     }
 
@@ -244,19 +266,65 @@ public class OwsController {
             }
             ScriptWrapper wrapper = wrapperOpt.get();
             Map<String, Object> inputs = ScriptWrapper.extractInputs(execute);
-            Connection connection = dataBaseManager.openDatabaseConnection();
-            Object result = wrapper.execute(connection, inputs);
+            try (Connection connection = dataBaseManager.openDatabaseConnection()) {
 
-            if (result instanceof Geometry) {
-                ctx.contentType("application/wkt");
-                ctx.result(result.toString());
-            } else {
-                ctx.json(Map.of("result", result));
+                Object result = wrapper.execute(connection, inputs);
+
+                if (result != null) {
+                    if (result instanceof Geometry) {
+                        ctx.contentType("application/wkt");
+                        ctx.result(result.toString());
+                    } else {
+                        ctx.result(result.toString());
+                    }
+                } else {
+                    ctx.result("{}");
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e.getMessage(), e);
+
             }
 
+
         } catch (Exception e) {
-            e.printStackTrace();
-            ctx.status(500).result("Error WPS : " + e.getMessage());
+            StringBuilder stackTrace = new StringBuilder();
+            for (StackTraceElement el : e.getStackTrace()) {
+                stackTrace.append(el.toString()).append("<br>");
+            }
+            String html =
+                    "<html>" +
+                            "<head>" +
+                            "    <style>" +
+                            "        body { font-family: Arial; margin: 20px; }" +
+                            "        .section { margin-bottom: 20px; }" +
+                            "        .title { font-size: 20px; font-weight: bold; margin-bottom: 5px; color:#b30000; }" +
+                            "        .box { border: 1px solid #ccc; padding: 10px; background:#fafafa; }" +
+                            "        .error { color: #b30000; font-weight: bold; }" +
+                            "    </style>" +
+                            "</head>" +
+                            "<body>" +
+
+                            "    <div class='section'>" +
+                            "        <div class='title'>Error: </div>" +
+                            "        <div class='box'><span class='error'>" + escapeHtml(e.getMessage()) + "</span></div>" +
+                            "    </div>" +
+
+                            "    <div class='section'>" +
+                            "        <div class='title'>Inputs Data</div>" +
+                            "        <div class='box'>" + escapeHtml(ctx.body()) + "</div>" +
+                            "    </div>" +
+
+                            "    <div class='section'>" +
+                            "        <div class='title'>Stacktrace</div>" +
+                            "        <div class='box'>" + stackTrace.toString() + "</div>" +
+                            "    </div>" +
+
+                            "</body>" +
+                            "</html>";
+
+            ctx.contentType("text/html; charset=UTF-8");
+            ctx.result(html);
         }
     }
 }

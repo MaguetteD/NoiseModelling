@@ -42,7 +42,7 @@ Below is an example of a bash instruction, executing the ``Noise_level_from_traf
    :linenos:
 
 
-``./bin`` instruction allows to launch the ``Scripts`` or ``Scripts.bat`` *(depending on if you are on Linux / Mac or Windows)* file, which is located in the ``bin/`` directory.
+``./bin`` instruction allows to launch the ``NoiseModelling_Without_GUI`` or ``NoiseModelling_Without_GUI.bat`` *(depending on if you are on Linux / Mac or Windows)* file, which is located in the ``bin/`` directory.
 
 
 .. warning ::

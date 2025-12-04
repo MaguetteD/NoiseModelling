@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=5.1.0
+Type=Application
+Name=ALTO
+Comment=Launch NoiseModelling WebServer
+Exec=sh -c 'DIR="$(dirname "%k")"; "$DIR/bin/NoiseModelling_With_GUI" -scripts="$DIR/noisemodelling/scripts"'
+Icon="$DIR/icon.png"
+Terminal=true
+Categories=Science;"

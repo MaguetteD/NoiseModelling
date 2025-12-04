@@ -46,9 +46,9 @@
             <outputDirectory>/</outputDirectory>
             <fileMode>0755</fileMode>
             <includes>
-                <include>NoiseModelling_5.1.bat</include>
-                <include>NoiseModelling_5_1.command</include>
-                <include>NoiseModelling_5_1.desktop</include>
+                <include>ALTO_Windows.bat</include>
+                <include>ALTO_macOS.command</include>
+                <include>ALTO_Linux.desktop</include>
                 <include>icon.png</include>
             </includes>
         </fileSet>

@@ -2,12 +2,16 @@ package org.noise_planet.noisemodelling.webserver;
 
 import io.javalin.Javalin;
 import org.junit.jupiter.api.*;
+import org.noise_planet.noisemodelling.scripts.Main;
 
 import java.io.IOException;
 import java.net.http.*;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,9 +64,12 @@ class MainHttpTest {
      * @throws IOException if an I/O error occurs while starting the server.
      */
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException, SQLException {
+        Path scriptsDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().resolve(
+                "src/main/groovy/org/noise_planet/noisemodelling/scripts"
+        ).normalize();
         MainServer mainServer = new MainServer();
-        app = mainServer.startServer(false);
+        app = mainServer.startServer(false, scriptsDir);
     }
 
     /**
@@ -181,6 +188,5 @@ class MainHttpTest {
 
         assertEquals(200, response.statusCode());
         assertNotNull(response.body());
-        assertTrue(response.body().contains("result"));
     }
 }

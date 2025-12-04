@@ -18,7 +18,7 @@ Download the latest realease of NoiseModelling on `Github`_.
     For **Linux** and **Mac** users, please make sure your Java environment is well setted. For more information, please read the page :doc:`Requirements`. **Windows** users who are using the ``.exe`` file are not concerned since the Java Runtime Environment is **already embeded**.
 
 .. note::
-    Only from version 3.3, NoiseModelling releases include the user interface described in this tutorial. 
+    Only from version 3.3, NoiseModelling releases include the user interface described in this tutorial.
 
 .. _Github : https://github.com/Ifsttar/NoiseModelling/releases
 
@@ -35,8 +35,9 @@ Those tools (WPS Builder and H2GIS) are already included in the archive. So you 
 
 To launch NoiseModelling with GUI, please execute :
 
-* Windows: ``NoiseModelling.exe`` or ``NoiseModelling_xxx\bin\WebServer.bat``
-* Linux or Mac: ``NoiseModelling_xxx/bin/WebServer`` *(check authorize file execution in property of this file before)*
+* Windows: ``ALTO_Windows.bat`` or ``NoiseModelling_xxx\bin\NoiseModelling_With_GUI.bat``
+* Linux: ``ALTO_Linux.desktop`` or ``NoiseModelling_xxx/bin/NoiseModelling_With_GUI`` *(check authorize file execution in property of this file before)*
+* Mac: ``ALTO_Linux.command`` or ``NoiseModelling_xxx/bin/NoiseModelling_With_GUI`` *(check authorize file execution in property of this file before)*
 
 and wait until `<INFO:Start NoiseModelling: http://localhost:8000/>`_ is written in your command prompt.
 
@@ -51,6 +52,11 @@ NoiseModelling with GUI is now started.
 
 
 .. _H2GIS : http://www.h2gis.org/
+
+.. note::
+    In the NoiseModeling application, in bin/ there are 4 launch scripts: NoiseModeling_With_GUI, NoiseModeling_Without_GUI (shell script for Linux/macOS), and NoiseModeling_With_GUI.bat, NoiseModeling_Without_GUI.bat (batch script for Windows).
+    For those who want to have the completion (with the .sh extension), you just need to manually rename NoiseModelling_With_GUI and NoiseModelling_Without_GUI to NoiseModelling_With_GUI.sh and NoiseModelling_Without_GUI.sh.
+
 
 Step 3: Open NoiseModelling GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,7 +181,7 @@ To display the result for a period you have to filter the rendering by the field
    Filter window
 
 .. tip::
-    Now that you have made your first noise map (congratulations!), you can try again, adding / changing optional parameters to see the differeneces.
+    Now that you have made your first noise map (congratulations!), you can try again, adding / changing optional parameters to see the differences.
 
 
 Step 7: Know the possibilities
