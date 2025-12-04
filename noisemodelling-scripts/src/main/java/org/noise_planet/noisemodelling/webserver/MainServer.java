@@ -8,10 +8,11 @@ import org.slf4j.LoggerFactory;
 import org.noise_planet.noisemodelling.scripts.Main;
 
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
-import java.sql.SQLException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
