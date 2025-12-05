@@ -156,7 +156,7 @@ public class MainServer {
                             break;
                         }
                     }catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        LOGGER.error(e.getMessage(), e);
                     } catch (Exception e) {
                         LOGGER.error(e.getMessage(), e);
                         return false;

@@ -87,7 +87,7 @@ public class DataBaseManager {
         if (!dbDirFile.exists()) {
             dbDirFile.mkdirs();
         }
-        String databasePath = "jdbc:h2:" + dbDir + "/" + getCurrentDbName() + ";AUTO_SERVER=TRUE" + ";AUTO_RECONNECT=TRUE" + ";MV_STORE=TRUE" + ";LOCK_TIMEOUT=7200000";
+        String databasePath = "jdbc:h2:" + dbDir + "/" + getCurrentDbName() + ";AUTO_SERVER=TRUE" + ";AUTO_RECONNECT=TRUE" + ";MV_STORE=TRUE" + ";LOCK_TIMEOUT=7200000000";
         Driver.load();
          return DriverManager.getConnection(databasePath, "", "");
     }
