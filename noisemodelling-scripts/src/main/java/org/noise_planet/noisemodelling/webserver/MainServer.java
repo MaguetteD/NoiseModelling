@@ -59,7 +59,7 @@ public class MainServer {
         PropertyConfigurator.configure(
                 Objects.requireNonNull(Main.class.getResource("static/log4j.properties")));
 
-        OwsController owsController = new OwsController(scriptsDir);
+        OwsController owsController = new OwsController(scriptsDir,LOGGER);
 
         String root = System.getProperty("user.dir");
         Path staticRoot = Paths.get(root).getParent().resolve("static");
@@ -156,6 +156,7 @@ public class MainServer {
                             break;
                         }
                     }catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         LOGGER.error(e.getMessage(), e);
                     } catch (Exception e) {
                         LOGGER.error(e.getMessage(), e);
@@ -175,11 +176,19 @@ public class MainServer {
      * @param owsController the instance responsible for reloading scripts when a `.groovy` file is changed.
      * @return a Future representing the asynchronous script reload operation.
      */
-    private Future<Boolean> startWatcher(Path scriptsDir, OwsController owsController) {
+    private Future<Boolean> startWatcher(Path scriptsDir, OwsController owsController){
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Callable<Boolean> task = new ScriptFileWatchedProcess(scriptsDir, owsController);
         return executor.submit(task);
     }
+    /**
+     * Resolves and returns the appropriate directory path containing the NoiseModelling scripts.
+     * The method checks multiple predefined locations for the scripts and returns the path if found.
+     * If the scripts are not found in the expected locations, a RuntimeException is thrown.
+     *
+     * @return the path to the NoiseModelling scripts directory.
+     * @throws RuntimeException if the scripts directory cannot be found in the expected locations.
+     */
     private  Path finScriptsDir() {
         Path scriptsDir = Paths.get(System.getProperty("user.dir"));
         if (!Files.exists(scriptsDir.resolve("noisemodelling-scripts")) && scriptsDir.getParent() != null) {
@@ -196,6 +205,15 @@ public class MainServer {
         }
     }
 
+    /**
+     * Resolves and returns the path to the scripts directory from the provided command-line arguments.
+     * The method searches for a `-scripts=` argument, extracts the path specified, and verifies its existence.
+     * If the argument is missing or the specified directory does not exist, a RuntimeException is thrown.
+     *
+     * @param args the command-line arguments to be searched for the `-scripts=` directive.
+     * @return the resolved absolute path to the scripts directory.
+     * @throws RuntimeException if the required `-scripts=` argument is missing or the specified directory does not exist.
+     */
     private Path findScriptsDirFromArgs(String[] args) {
         for (String arg : args) {
             if (arg.startsWith("-scripts=")) {

@@ -7,6 +7,8 @@ import org.geotools.xsd.Parser;
 import org.h2gis.functions.factory.H2GISFunctions;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.scripts.Main;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -18,6 +20,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.h2.server.web.PageParser.escapeHtml;
 
@@ -71,7 +75,9 @@ public class OwsController {
      * and outputs for WPS processes.
      */
     WpsScriptWrapper wpsScriptWrapper;
-
+    private static Logger LOGGER = null;
+    private final ExecutorService scriptExecutor = Executors.newCachedThreadPool();
+    private final ScheduledExecutorService monitorExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs a new instance of the OwsController class, initializing the environment
@@ -84,7 +90,8 @@ public class OwsController {
      * @throws IOException if an I/O error occurs while initializing or loading scripts.
      * @throws SQLException if a database access error occurs while loading spatial functions.
      */
-    public OwsController( Path scriptsDir) throws IOException, SQLException {
+    public OwsController( Path scriptsDir,Logger logger) throws IOException, SQLException {
+        LOGGER=logger;
         this.scriptsRoot = scriptsDir;
         wpsScriptWrapper = new WpsScriptWrapper(scriptsRoot);
         Map<String, List<File>> groupedScripts = wpsScriptWrapper.loadScripts();
@@ -223,19 +230,18 @@ public class OwsController {
 
 
     /**
-     * Handles an HTTP POST request for a Web Processing Service (WPS) operation.
-     * This method parses the request body, validates the WPS Execute Request, identifies
-     * the target script to execute based on its process identifier, and executes the script.
-     * The result of the script execution is returned as a JSON response.
-     * Responds with appropriate HTTP status codes for invalid requests, missing scripts,
-     * and internal server errors.
+     * Handles a WPS (Web Processing Service) POST request. It parses the request body to execute a
+     * specified WPS process and returns the result or appropriate error messages based on the inputs
+     * and execution status.
      *
-     * @param ctx the context of the HTTP request, providing access to the request body,
-     *            response handling, and the ability to set status codes and send JSON responses
+     * @param ctx the context of the HTTP request, providing access to the request body, headers, response
+     *            handling, and more.
      */
     public void handleWPSPost(Context ctx) {
+        Future<Object> future = null;
+        ScheduledFuture<?> watchdog = null;
         try {
-
+            ExecuteType execute = null;
             Parser parser = new Parser(new WPSConfiguration());
             Object parsed = parser.parse(new ByteArrayInputStream(ctx.bodyAsBytes()));
 
@@ -244,7 +250,7 @@ public class OwsController {
                 return;
             }
 
-            ExecuteType execute = (ExecuteType) parsed;
+            execute = (ExecuteType) parsed;
             String processId = execute.getIdentifier().getValue();
 
             String[] parts = processId.split(":");
@@ -266,32 +272,68 @@ public class OwsController {
             }
             ScriptWrapper wrapper = wrapperOpt.get();
             Map<String, Object> inputs = ScriptWrapper.extractInputs(execute);
-            try (Connection connection = dataBaseManager.openDatabaseConnection()) {
+            // Timeout limit for watchdog = 3 minute
+            final long TIMEOUT = 3 * 60 * 1000;
+            final String scriptId = wrapper.id;
+            // Will hold the thread actualy runing the WPS script, so the watchdog can inspect it
+            AtomicReference<Thread> workerThreadRef = new AtomicReference<>();
+            // Submit the script execution in a background thraed
+            future = scriptExecutor.submit(() -> {
+                workerThreadRef.set(Thread.currentThread());
 
-                Object result = wrapper.execute(connection, inputs);
-
-                if (result != null) {
-                    if (result instanceof Geometry) {
-                        ctx.contentType("application/wkt");
-                        ctx.result(result.toString());
-                    } else {
-                        ctx.result(result.toString());
-                    }
-                } else {
-                    ctx.result("{}");
+                try (Connection conn = dataBaseManager.openDatabaseConnection()) {
+                    H2GISFunctions.load(conn);
+                    return wrapper.execute(conn, inputs);
                 }
+            });
+            Future<Object> finalFuture = future;
+            // Schedule a watchdog task that fire after TIMEOUT to inspect long-running processes
+            watchdog = monitorExecutor.schedule(() -> {
+                if (!finalFuture.isDone()) {
+                    Thread t = workerThreadRef.get();
+                    if (t != null) {
+                        // Build a readable report of the thread’s stack trace
+                        StringBuilder bt = new StringBuilder();
+                        bt.append("\n  The WPS script exceeds "+TIMEOUT+" minutes: ").append(scriptId).append("\n");
+                        bt.append("Stack trace of the execution thread (").append(t.getName()).append("):\n");
 
-            } catch (SQLException e) {
-                throw new RuntimeException(e.getMessage(), e);
+                        for (StackTraceElement el : t.getStackTrace()) {
+                            bt.append("  at ").append(el.toString()).append("\n");
+                        }
+                        // Log the warning with stack information
+                        LOGGER.warn(bt.toString());
+                    }
+                }
+            }, TIMEOUT, TimeUnit.MILLISECONDS);
 
+            Object result = future.get();
+
+            if (result != null) {
+                String textResult = result.toString();
+                textResult = textResult.replaceAll("</br\\s*/?>", "\n");
+                textResult = textResult.replace("&nbsp;", " ");
+                if (result instanceof Geometry) {
+                    ctx.contentType("application/wkt");
+                    ctx.result(result.toString());
+                    LOGGER.info(textResult);
+                } else {
+                    ctx.result(result.toString());
+                    LOGGER.info(textResult);
+                }
+            } else {
+                ctx.result("null");
             }
-
-
-        } catch (Exception e) {
+        }  catch (Exception e) {
+            // If error occurred inside the future, unwrap the ExecutionException
+            Throwable cause = e;
+            if (e instanceof ExecutionException) {
+                cause = e.getCause();
+            }
             StringBuilder stackTrace = new StringBuilder();
-            for (StackTraceElement el : e.getStackTrace()) {
+            for (StackTraceElement el : cause.getStackTrace()) {
                 stackTrace.append(el.toString()).append("<br>");
             }
+            String errorMsg = cause.getMessage() != null ? cause.getMessage().replace("<", "&lt;") : "Unknown error";
             String html =
                     "<html>" +
                             "<head>" +
@@ -307,7 +349,7 @@ public class OwsController {
 
                             "    <div class='section'>" +
                             "        <div class='title'>Error: </div>" +
-                            "        <div class='box'><span class='error'>" + escapeHtml(e.getMessage()) + "</span></div>" +
+                            "        <div class='box'><span class='error'>" + errorMsg + "</span></div>" +
                             "    </div>" +
 
                             "    <div class='section'>" +
@@ -325,6 +367,11 @@ public class OwsController {
 
             ctx.contentType("text/html; charset=UTF-8");
             ctx.result(html);
+            LOGGER.error("WPS Execution Error", cause);
+        } finally {
+            if (watchdog != null) {
+                watchdog.cancel(false);
+            }
         }
     }
 }
