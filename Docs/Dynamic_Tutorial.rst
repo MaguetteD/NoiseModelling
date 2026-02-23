@@ -201,6 +201,14 @@ Use the block ``Dynamic::Split_Sources_Period`` :
 
 Two output table is created ``SOURCES_GEOM`` and ``SOURCES_EMISSION``
 
+Emission
+~~~~~~~~~
+
+The ``NoiseModelling:Road_Emission_from_Traffic`` block is used to generate a road layer, called ``LW_ROADS``, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Block.
+
+#. ``Roads table name``: Enter ``SOURCES_EMISSION`` Contain for each source index and period the traffic.
+
+The output table ``LW_ROADS`` is created.
 
 Compute noise level at receivers points for each receiver-period
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -209,11 +217,12 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
 #. ``Buildings table name``: Enter ``BUILDINGS``
 #. ``Source geometry table name``: Enter ``SOURCES_GEOM`` Contain only the geometries of the sources (points)
-#. ``Source emission table name``: Enter ``SOURCES_EMISSION`` Contain for each source index and period the noise emission
+#. ``Source emission table name``: Enter ``LW_ROADS`` Contain for each source index and period the noise emission
 #. ``Receivers table name``: Enter ``RECEIVERS``
 #. ``Diffraction on horizontal edges``: Check it
 #. ``Order of reflexion``: Enter ``0``
 
+The output table ``RECEIVERS_LEVEL`` containing the id of the receiver, the period and the sound levels is created.
 
 Compute noise indicators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

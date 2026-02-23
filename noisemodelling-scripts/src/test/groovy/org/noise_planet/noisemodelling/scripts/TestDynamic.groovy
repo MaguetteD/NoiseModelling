@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 
 import java.nio.file.Path
 
@@ -401,22 +402,25 @@ class TestDynamic{
         // This method place randomly the vehicles on the network according to the traffic flow
         new Split_Sources_Period().exec(connection,
                 ["tableSourceDynamic": "ROADS",
-                "sourceIndexFieldName" : "LINK_ID",
-                "sourcePeriodFieldName" : "TIME"])
+                 "sourceIndexFieldName" : "LINK_ID",
+                 "sourcePeriodFieldName" : "TIME"])
+
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "SOURCES_EMISSION"])
 
         // Compute the noise level from the network sources for each time period
         new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
-                "tableSources"   : "SOURCES_GEOM",
-                "tableEmission"   : "SOURCES_EMISSION",
-                "tableReceivers": "RECEIVERS",
-                "confDiffHorizontal" : true,
-                "confReflOrder"       : 0
+                 "tableSources"   : "SOURCES_GEOM",
+                 "tableSourcesEmission"   : "LW_ROADS",
+                 "tableReceivers": "RECEIVERS",
+                 "confDiffHorizontal" : true,
+                 "confReflOrder"       : 0
                 ])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, "RECEIVERS_LEVEL")
 
-        columnNames.containsAll(Arrays.asList("PERIOD", "LAEQ"))
+        assertTrue(columnNames.containsAll(Arrays.asList("PERIOD", "LAEQ")))
 
     }
 
